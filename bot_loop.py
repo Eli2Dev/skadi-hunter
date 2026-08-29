@@ -86,9 +86,9 @@ def run_scheduled_alerts() -> None:
 
 
 def main() -> None:
-    bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
-    bot_thread.start()
-    run_scheduled_alerts()
+    alerts_thread = threading.Thread(target=run_scheduled_alerts, daemon=True)
+    alerts_thread.start()
+    run_telegram_bot()
 
 
 if __name__ == "__main__":
