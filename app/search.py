@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+from datetime import datetime
 from typing import Any
 from urllib.parse import parse_qs, quote_plus, urlparse
 
@@ -60,6 +62,50 @@ def normalize_result(result: dict[str, Any], source: str) -> dict[str, Any]:
     }
 
 
+def is_recent_job(job: dict[str, Any]) -> bool:
+    text = " ".join(
+        [
+            str(job.get("title") or ""),
+            str(job.get("summary") or job.get("body") or ""),
+        ]
+    ).lower()
+
+    if not text:
+        return False
+
+    recent_indicators = [
+        "hoje",
+        "today",
+        "ontem",
+        "yesterday",
+        "há 1 dia",
+        "ha 1 dia",
+        "publicado hoje",
+        "publicada hoje",
+        "agora",
+        "recent",
+        "new",
+        "novidade",
+    ]
+
+    if any(ind in text for ind in recent_indicators):
+        return True
+
+    match = re.search(r"(\d+)\s*(dia|dias|hora|horas|minuto|minutos)\s*(atr[aá]s|ago|ago)?", text)
+    if match:
+        number = int(match.group(1))
+        unit = match.group(2).lower()
+        if unit in {"dia", "dias"}:
+            return number <= 7
+        if unit in {"hora", "horas", "minuto", "minutos"}:
+            return number <= 24
+
+    if re.search(r"(salvador|bahia|bahia|remoto|hibrido|hybrid)", text):
+        return True
+
+    return True
+
+
 def _fetch_duckduckgo(query: str) -> str:
     url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
     response = requests.get(url, headers=USER_AGENT, timeout=15)
@@ -107,6 +153,9 @@ def search_jobs(
             normalized = normalize_result(result, source="DuckDuckGo")
             url = normalized.get("url")
             if not url or url in seen_urls:
+                continue
+
+            if not is_recent_job(normalized):
                 continue
 
             seen_urls.add(url)

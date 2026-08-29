@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from datetime import datetime
 from pathlib import Path
 
 from app.search import search_jobs
@@ -15,6 +16,7 @@ DEFAULT_KEYWORDS = [
     "suporte de ti",
     "analista de suporte",
 ]
+ALERT_HOURS = {8, 12, 16, 20}
 
 STATE_FILE = Path(os.getenv("JOB_STATE_FILE", "sent_jobs.json"))
 LOCATION = os.getenv("JOB_LOCATION", "Salvador")
@@ -65,11 +67,20 @@ def get_new_jobs() -> list[dict]:
     return new_jobs
 
 
+def should_send_alert_now() -> bool:
+    now = datetime.now()
+    return now.hour in ALERT_HOURS and now.minute < 10
+
+
 def run_scheduled_alerts() -> None:
-    print(f"Bot iniciado. Intervalo: {INTERVAL_SECONDS} segundos | Local: {LOCATION}")
+    print(f"Bot iniciado. Alertas em: 08:00, 12:00, 16:00, 20:00 | Local: {LOCATION}")
 
     while True:
         try:
+            if not should_send_alert_now():
+                time.sleep(60)
+                continue
+
             new_jobs = get_new_jobs()
             if new_jobs:
                 message = build_telegram_message(new_jobs, f"estagio suporte ti em {LOCATION}")
@@ -80,7 +91,8 @@ def run_scheduled_alerts() -> None:
         except Exception as exc:  # pragma: no cover
             print(f"Erro no ciclo: {exc}")
 
-        time.sleep(INTERVAL_SECONDS)
+        sleep_seconds = 60 * 60
+        time.sleep(sleep_seconds)
 
 
 def main() -> None:

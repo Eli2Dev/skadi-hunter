@@ -1,4 +1,4 @@
-from app.search import build_queries, normalize_result
+from app.search import build_queries, is_recent_job, normalize_result
 
 
 def test_build_queries():
@@ -37,3 +37,23 @@ def test_default_keywords_for_suporte_ti_salvador():
     assert queries
     assert any("salvador" in q.lower() for q in queries)
     assert any("suporte" in q.lower() for q in queries)
+
+
+def test_is_recent_job_accepts_recent_results():
+    job = {
+        "title": "Estágio em suporte de TI",
+        "summary": "Vaga publicada hoje em Salvador",
+        "url": "https://example.com/job/recent",
+    }
+
+    assert is_recent_job(job) is True
+
+
+def test_is_recent_job_rejects_stale_results():
+    job = {
+        "title": "Estágio em suporte de TI",
+        "summary": "Vaga antiga, publicada há mais de 30 dias",
+        "url": "https://example.com/job/old",
+    }
+
+    assert is_recent_job(job) is False
