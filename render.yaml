@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: skadii-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot_loop.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: BOT_INTERVAL_SECONDS
+        value: 18000
+      - key: JOB_LOCATION
+        value: Salvador
+      - key: JOB_MAX_RESULTS
+        value: 8
