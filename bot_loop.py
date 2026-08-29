@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import time
 from pathlib import Path
 
 from app.search import search_jobs
 from app.telegram import build_telegram_message, send_telegram_message
+from telegram_bot import main as run_telegram_bot
 
 DEFAULT_KEYWORDS = [
     "estagio suporte ti",
@@ -65,7 +67,7 @@ def get_new_jobs() -> list[dict]:
     return new_jobs
 
 
-def main() -> None:
+def run_scheduled_alerts() -> None:
     print(f"Bot iniciado. Intervalo: {INTERVAL_SECONDS} segundos | Local: {LOCATION}")
 
     while True:
@@ -81,6 +83,12 @@ def main() -> None:
             print(f"Erro no ciclo: {exc}")
 
         time.sleep(INTERVAL_SECONDS)
+
+
+def main() -> None:
+    bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
+    bot_thread.start()
+    run_scheduled_alerts()
 
 
 if __name__ == "__main__":
