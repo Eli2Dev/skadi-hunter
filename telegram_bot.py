@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import os
+import tempfile
+from pathlib import Path
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -16,6 +18,7 @@ from app.telegram import (
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 LOCATION = os.getenv("JOB_LOCATION", "Salvador")
+LOCK_PATH = Path(tempfile.gettempdir()) / "skadi_hunter_telegram.lock"
 
 
 def fetch_vagas() -> str:
@@ -56,18 +59,53 @@ def ensure_event_loop() -> asyncio.AbstractEventLoop:
     return loop
 
 
+def acquire_singleton_lock() -> bool:
+    try:
+        import fcntl
+    except ImportError:
+        return True
+
+    try:
+        fd = open(LOCK_PATH, "w", encoding="utf-8")
+        fcntl.flock(fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except BlockingIOError:
+        print("Telegram já está em execução em outra instância. Abortando polling duplicado.")
+        return False
+
+
+def release_singleton_lock() -> None:
+    try:
+        import fcntl
+    except ImportError:
+        return
+
+    try:
+        if LOCK_PATH.exists():
+            with open(LOCK_PATH, "r+", encoding="utf-8") as lock_file:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+    except OSError:
+        pass
+
+
 def main() -> None:
     if not TOKEN:
         raise RuntimeError("TELEGRAM_BOT_TOKEN não definido.")
 
-    ensure_event_loop()
+    if not acquire_singleton_lock():
+        return
 
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("vagas", vagas))
-    app.add_handler(CommandHandler("status", status))
-    app.add_handler(CommandHandler("help", help_command))
-    app.run_polling(drop_pending_updates=True)
+    try:
+        ensure_event_loop()
+
+        app = Application.builder().token(TOKEN).build()
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(CommandHandler("vagas", vagas))
+        app.add_handler(CommandHandler("status", status))
+        app.add_handler(CommandHandler("help", help_command))
+        app.run_polling(drop_pending_updates=True)
+    finally:
+        release_singleton_lock()
 
 
 if __name__ == "__main__":

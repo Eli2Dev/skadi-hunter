@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import json
 import os
-import threading
 import time
 from pathlib import Path
 
 from app.search import search_jobs
 from app.telegram import build_telegram_message, send_telegram_message
-from telegram_bot import main as run_telegram_bot
 
 DEFAULT_KEYWORDS = [
     "estagio suporte ti",
@@ -86,9 +84,7 @@ def run_scheduled_alerts() -> None:
 
 
 def main() -> None:
-    alerts_thread = threading.Thread(target=run_scheduled_alerts, daemon=True)
-    alerts_thread.start()
-    run_telegram_bot()
+    run_scheduled_alerts()
 
 
 if __name__ == "__main__":
