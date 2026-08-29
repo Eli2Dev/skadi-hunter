@@ -1,4 +1,9 @@
-from app.telegram import build_telegram_message
+from app.telegram import (
+    build_help_message,
+    build_intro_message,
+    build_status_message,
+    build_telegram_message,
+)
 
 
 def test_build_telegram_message():
@@ -17,3 +22,27 @@ def test_build_telegram_message():
     assert "https://example.com/job/123" in message
     assert "Vaga remota para Python" in message
     assert "python" in message.lower()
+
+
+def test_build_intro_message_contains_greeting_and_services():
+    message = build_intro_message("Eli")
+
+    assert "Eli" in message
+    assert "Skadi Hunter" in message
+    assert "Vagas" in message
+    assert "Suporte" in message
+
+
+def test_build_help_message_contains_commands():
+    message = build_help_message()
+
+    assert "/vagas" in message
+    assert "/status" in message
+    assert "/help" in message
+
+
+def test_build_status_message_contains_service_state():
+    message = build_status_message("online", "Salvador")
+
+    assert "online" in message.lower()
+    assert "Salvador" in message
