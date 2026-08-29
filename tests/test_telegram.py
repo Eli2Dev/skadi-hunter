@@ -1,9 +1,12 @@
+import asyncio
+
 from app.telegram import (
     build_help_message,
     build_intro_message,
     build_status_message,
     build_telegram_message,
 )
+from telegram_bot import ensure_event_loop
 
 
 def test_build_telegram_message():
@@ -46,3 +49,10 @@ def test_build_status_message_contains_service_state():
 
     assert "online" in message.lower()
     assert "Salvador" in message
+
+
+def test_ensure_event_loop_creates_loop_for_render_runtime():
+    loop = ensure_event_loop()
+
+    assert isinstance(loop, asyncio.AbstractEventLoop)
+    assert asyncio.get_event_loop() is loop

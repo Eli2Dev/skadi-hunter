@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 
 from telegram import Update
@@ -46,9 +47,20 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text(build_help_message())
 
 
+def ensure_event_loop() -> asyncio.AbstractEventLoop:
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop
+
+
 def main() -> None:
     if not TOKEN:
         raise RuntimeError("TELEGRAM_BOT_TOKEN não definido.")
+
+    ensure_event_loop()
 
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
